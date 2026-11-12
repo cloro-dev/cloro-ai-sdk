@@ -1,6 +1,6 @@
 {
   "name": "@cloro-dev/ai-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "cloro tools for the Vercel AI SDK: Google search results with the AI Overview, and answers from ChatGPT, Gemini, Google AI Mode and Bing AI Mode with their sources.",
   "keywords": [
     "ai",
