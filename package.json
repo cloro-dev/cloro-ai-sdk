@@ -1,0 +1,70 @@
+{
+  "name": "@cloro-dev/ai-sdk",
+  "version": "0.1.0",
+  "description": "cloro tools for the Vercel AI SDK: Google search results with the AI Overview, and answers from ChatGPT, Gemini, Google AI Mode and Bing AI Mode with their sources.",
+  "keywords": [
+    "ai",
+    "ai-sdk",
+    "vercel",
+    "tools",
+    "agent",
+    "web search",
+    "google search",
+    "ai overview",
+    "chatgpt",
+    "gemini",
+    "cloro"
+  ],
+  "license": "MIT",
+  "author": "cloro <support@cloro.dev>",
+  "homepage": "https://cloro.dev/?utm_source=ai-sdk&utm_medium=byok",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloro-dev/cloro-ai-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cloro-dev/cloro-ai-sdk/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run test/unit.test.ts",
+    "test:live": "vitest run test/live.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@cloro-dev/cloro": "^0.4.0"
+  },
+  "peerDependencies": {
+    "ai": "^6.0.0 || ^7.0.0",
+    "zod": "^3.25.76 || ^4.1.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "ai": "^7.0.170",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7",
+    "zod": "^4.6.7"
+  }
+}

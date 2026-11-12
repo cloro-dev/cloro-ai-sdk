@@ -1,0 +1,70 @@
+# Publishes the package to npm when a merge to main changes `version` in
+# package.json, then creates the vX.Y.Z tag and the GitHub Release. You can
+# also start it by hand (workflow_dispatch) to publish the current version.
+#
+# npm Trusted Publishing gives the job a short-lived OIDC token. No npm token
+# is stored. npm has no pending publisher, so the first version is published
+# by hand. Then the operator adds the trusted publisher:
+#   npm trust github @cloro-dev/ai-sdk --file publish.yml --repo cloro-dev/cloro-ai-sdk --allow-publish
+# or on https://www.npmjs.com/package/@cloro-dev/ai-sdk/access
+# (Trusted Publisher > GitHub Actions: cloro-dev/cloro-ai-sdk, publish.yml).
+
+name: Publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      new: ${{ steps.v.outputs.new }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if npm view "@cloro-dev/ai-sdk@$version" version > /dev/null 2>&1; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish:
+    needs: check
+    if: needs.check.outputs.new == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Trusted Publishing and provenance
+      contents: write # the tag and the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      # Trusted Publishing needs npm 11.5.1 or later.
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+      - name: Create the tag and the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${{ needs.check.outputs.version }}"
+          if ! gh release view "$tag" > /dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" --generate-notes
+          fi
