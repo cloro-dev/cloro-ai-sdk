@@ -19,8 +19,8 @@ const ENGINE_NAMES: Record<AiEngine, string> = {
   "bing-ai-mode": "Bing AI Mode",
 };
 
-/** Bing puts the prompt in the page URL. The API refuses a longer encoded prompt. */
-const BING_PROMPT_LIMIT = 3500;
+/** Bing puts the prompt or query in the page URL. The API refuses a longer encoded text. */
+export const BING_PROMPT_LIMIT = 3500;
 
 /** Options for {@link aiAnswer}. */
 export interface AiAnswerOptions extends CloroToolOptions {

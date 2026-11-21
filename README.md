@@ -2,7 +2,7 @@
 
 [cloro](https://cloro.dev/?utm_source=ai-sdk&utm_medium=byok) tools for the [Vercel AI SDK](https://ai-sdk.dev).
 
-- `webSearch` sends a query to Google and returns the AI Overview (when Google shows one) and the top organic results with title, link and snippet.
+- `webSearch` sends a query to Google or Bing and returns the AI Overview (when the search engine shows one) and the top organic results with title, link and snippet.
 - `aiAnswer` asks ChatGPT, Gemini, Google AI Mode or Bing AI Mode a question and returns the answer with the sources it cites.
 
 Each tool is a factory that returns an AI SDK `tool()` with a Zod input schema and a typed output.
@@ -59,14 +59,26 @@ The model sends `{ query }`. The tool returns:
 }
 ```
 
-`aiOverview` is `null` when Google shows no AI Overview for the query, or when you set `includeAiOverview: false`. The tool removes results that have no resolved link.
+`aiOverview` is `null` when the search engine shows no AI Overview for the query, or when you set `includeAiOverview: false`. The tool removes results that have no resolved link.
 
 | Option | Type | Default | Description |
 | - | - | - | - |
 | `apiKey` | `string` | `CLORO_API_KEY` | Your cloro API key. |
-| `country` | `string` | `"US"` | ISO 3166-1 alpha-2 country code for the search, for example `"DE"`. |
+| `engine` | `"google" \| "bing"` | `"google"` | The search engine to query. |
+| `country` | `string` | `"US"` | ISO 3166-1 alpha-2 country code for the search, for example `"DE"`. For Bing, the country selects the Bing market. |
 | `maxResults` | `number` | `10` | Number of organic results to return, from 1 to 10 (the first results page). |
-| `includeAiOverview` | `boolean` | `true` | Include the Google AI Overview. Set it to `false` to pay 2 credits less for each search. |
+| `includeAiOverview` | `boolean` | `true` | Include the AI Overview. For Bing, this is the Bing AI summary at the top of the results page. Set it to `false` to pay 2 credits less for each search. |
+
+`webSearch({ engine: "bing" })` returns the Bing results with the AI Overview, in the same output shape as Google. To give the model both search engines, make one tool for each:
+
+```ts
+const tools = {
+  googleSearch: webSearch(),
+  bingSearch: webSearch({ engine: "bing" }),
+};
+```
+
+Bing accepts a query of 3,500 characters or fewer after URL encoding. The tool refuses a longer query before it sends the request.
 
 ### `aiAnswer(options?)`
 
@@ -108,6 +120,8 @@ The tools use the cloro sync endpoints, which wait for the result. A sync reques
 | - | - |
 | `webSearch()` (with the AI Overview) | 7 (3 for the search, 2 for the AI Overview, 2 for sync) |
 | `webSearch({ includeAiOverview: false })` | 5 |
+| `webSearch({ engine: "bing" })` (with the AI Overview) | 7 (3 for the search, 2 for the AI Overview, 2 for sync) |
+| `webSearch({ engine: "bing", includeAiOverview: false })` | 5 |
 | `aiAnswer({ engine: "chatgpt" })` | 7 |
 | `aiAnswer({ engine: "gemini" })` | 6 |
 | `aiAnswer({ engine: "google-ai-mode" })` | 6 |

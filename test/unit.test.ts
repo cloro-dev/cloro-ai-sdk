@@ -111,6 +111,34 @@ describe("webSearch", () => {
     expect(output.results).toHaveLength(1);
   });
 
+  it("sends a Bing request when engine is bing and reads the same shapes", async () => {
+    const fn = mockFetch(googleResponse);
+    const tool = webSearch({ engine: "bing", country: "gb" });
+    const output = await run(tool, { query: "boiling point of water at 2000 m" });
+
+    const req = sentRequest(fn);
+    expect(req.url).toBe("https://api.cloro.dev/v1/monitor/bing");
+    expect(req.body).toEqual({
+      query: "boiling point of water at 2000 m",
+      country: "GB",
+      include: { aioverview: { markdown: false } },
+    });
+    expect(output.aiOverview?.text).toBe("Water boils at about 93 °C at 2,000 meters.");
+    expect(output.results).toHaveLength(3);
+    expect(tool.description).toContain("Search Bing");
+  });
+
+  it("refuses a Bing query over the URL limit before it sends a request", async () => {
+    const fn = mockFetch(googleResponse);
+    const query = "é".repeat(600); // 6 encoded characters each: 3,600
+    await expect(run(webSearch({ engine: "bing" }), { query })).rejects.toThrow(/too long/);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("refuses an unknown search engine", () => {
+    expect(() => webSearch({ engine: "yahoo" as never })).toThrow(/Unknown engine/);
+  });
+
   it("returns a null AI Overview when Google shows none", async () => {
     mockFetch({ success: true, result: { organicResults: [] } });
     const output = await run(webSearch(), { query: "x" });
