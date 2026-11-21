@@ -1,7 +1,7 @@
 {
   "name": "@cloro-dev/ai-sdk",
-  "version": "0.1.1",
-  "description": "cloro tools for the Vercel AI SDK: Google search results with the AI Overview, and answers from ChatGPT, Gemini, Google AI Mode and Bing AI Mode with their sources.",
+  "version": "0.2.0",
+  "description": "cloro tools for the Vercel AI SDK: Google and Bing search results with the AI Overview, and answers from ChatGPT, Gemini, Google AI Mode and Bing AI Mode with their sources.",
   "keywords": [
     "ai",
     "ai-sdk",
@@ -10,6 +10,7 @@
     "agent",
     "web search",
     "google search",
+    "bing search",
     "ai overview",
     "chatgpt",
     "gemini",
@@ -53,7 +54,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@cloro-dev/cloro": "^0.4.0"
+    "@cloro-dev/cloro": "^0.5.0"
   },
   "peerDependencies": {
     "ai": "^6.0.0 || ^7.0.0",

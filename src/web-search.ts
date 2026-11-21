@@ -1,5 +1,6 @@
 import { tool, type Tool } from "ai";
 import { z } from "zod";
+import { bingPromptLength, BING_PROMPT_LIMIT } from "./ai-answer.js";
 import {
   countryCode,
   isUsableLink,
@@ -10,18 +11,28 @@ import {
   type Source,
 } from "./shared.js";
 
+/** The search engines that {@link webSearch} can query. */
+export type SearchEngine = "google" | "bing";
+
+const SEARCH_ENGINE_NAMES: Record<SearchEngine, string> = {
+  google: "Google",
+  bing: "Bing",
+};
+
 /** Options for {@link webSearch}. */
 export interface WebSearchOptions extends CloroToolOptions {
+  /** The search engine to query. Default `"google"`. */
+  engine?: SearchEngine;
   /** Maximum number of organic results to return, from 1 to 10. Default 10. */
   maxResults?: number;
   /**
-   * Include the Google AI Overview when Google shows one. Default `true`.
+   * Include the AI Overview when the search engine shows one. Default `true`.
    * The AI Overview adds 2 credits to each search.
    */
   includeAiOverview?: boolean;
 }
 
-/** One organic result from the Google results page. */
+/** One organic result from the results page. */
 export interface WebSearchResultItem {
   position: number;
   title: string;
@@ -32,9 +43,9 @@ export interface WebSearchResultItem {
 /** The output of the {@link webSearch} tool. */
 export interface WebSearchOutput {
   query: string;
-  /** The Google AI Overview, or `null` when Google shows none or you turned it off. */
+  /** The AI Overview, or `null` when the search engine shows none or you turned it off. */
   aiOverview: { text: string; sources: Source[] } | null;
-  /** The top organic results, in the order Google shows them. */
+  /** The top organic results, in the order the search engine shows them. */
   results: WebSearchResultItem[];
 }
 
@@ -45,15 +56,16 @@ interface RawOrganicResult {
   snippet?: string;
 }
 
-interface RawGoogleResult {
+// Bing Search returns the same shapes as Google Search.
+interface RawSearchResult {
   organicResults?: RawOrganicResult[];
   aioverview?: { text?: string; sources?: RawSource[] } | null;
 }
 
 /**
  * Makes a web search tool for the AI SDK. The tool sends the query to Google
- * through the cloro API and returns the AI Overview (when Google shows one)
- * and the top organic results with title, link and snippet.
+ * (or Bing) through the cloro API and returns the AI Overview (when the search
+ * engine shows one) and the top organic results with title, link and snippet.
  *
  * @example
  * ```ts
@@ -73,21 +85,39 @@ export function webSearch(options: WebSearchOptions = {}): Tool<{ query: string 
   const country = countryCode(options.country);
   const maxResults = Math.min(Math.max(Math.trunc(options.maxResults ?? 10), 1), 10);
   const includeAiOverview = options.includeAiOverview ?? true;
+  const engine = options.engine ?? "google";
+  const name = SEARCH_ENGINE_NAMES[engine];
+  if (!name) {
+    throw new Error(
+      `Unknown engine "${engine}". Use one of: ${Object.keys(SEARCH_ENGINE_NAMES).join(", ")}.`,
+    );
+  }
 
   return tool({
     description:
-      "Search Google and return the AI Overview (when Google shows one) and the top organic results with title, link and snippet. " +
+      `Search ${name} and return the AI Overview (when ${name} shows one) and the top organic results with title, link and snippet. ` +
       "Use it for current facts, recent events and other information that can change after your training data.",
     inputSchema: z.object({
-      query: z.string().min(1).describe("The search query, as you would type it into Google"),
+      query: z.string().min(1).describe(`The search query, as you would type it into ${name}`),
     }),
     execute: async ({ query }): Promise<WebSearchOutput> => {
-      const response = await client().monitor.google({
+      const params = {
         query,
         country,
         ...(includeAiOverview ? { include: { aioverview: { markdown: false } } } : {}),
-      });
-      const result: RawGoogleResult = response?.result ?? {};
+      };
+      let response: { result?: RawSearchResult } | undefined;
+      if (engine === "bing") {
+        if (bingPromptLength(query) > BING_PROMPT_LIMIT) {
+          throw new Error(
+            `The query is too long for Bing Search: the limit is ${BING_PROMPT_LIMIT} characters after URL encoding. Use a shorter query.`,
+          );
+        }
+        response = await client().monitor.bing(params);
+      } else {
+        response = await client().monitor.google(params);
+      }
+      const result: RawSearchResult = response?.result ?? {};
 
       const results: WebSearchResultItem[] = [];
       for (const row of result.organicResults ?? []) {
