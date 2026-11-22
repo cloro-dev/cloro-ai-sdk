@@ -59,7 +59,7 @@ The model sends `{ query }`. The tool returns:
 }
 ```
 
-`aiOverview` is `null` when the search engine shows no AI Overview for the query, or when you set `includeAiOverview: false`. The tool removes results that have no resolved link.
+`aiOverview` is `null` when the search engine shows no AI Overview for the query, or when you set `includeAiOverview: false`. The tool removes results that have no resolved link. For Google and Bing, the tool returns the organic results and the AI Overview, and not the ads.
 
 | Option | Type | Default | Description |
 | - | - | - | - |
