@@ -2,7 +2,7 @@
 
 [cloro](https://cloro.dev/?utm_source=ai-sdk&utm_medium=byok) tools for the [Vercel AI SDK](https://ai-sdk.dev).
 
-- `webSearch` sends a query to Google or Bing and returns the AI Overview (when the search engine shows one) and the top organic results with title, link and snippet.
+- `webSearch` sends a query to Google or Bing and returns the AI Overview (when the search engine shows one), the top organic results with title, link and snippet, and the ads on the page.
 - `aiAnswer` asks ChatGPT, Gemini, Google AI Mode or Bing AI Mode a question and returns the answer with the sources it cites.
 
 Each tool is a factory that returns an AI SDK `tool()` with a Zod input schema and a typed output.
@@ -56,17 +56,29 @@ The model sends `{ query }`. The tool returns:
   query: string;
   aiOverview: { text: string; sources: { title: string; link: string }[] } | null;
   results: { position: number; title: string; link: string; snippet: string }[];
+  ads: {
+    position?: number;
+    blockPosition?: string; // "top", "middle", "bottom" or "rhs" (side rail)
+    type?: string; // "RESULT" (text ad) or "SHOPPING_CARD"
+    title?: string;
+    link?: string;
+    description?: string;
+    price?: string;
+    store?: string;
+  }[];
 }
 ```
 
 `aiOverview` is `null` when the search engine shows no AI Overview for the query, or when you set `includeAiOverview: false`. The tool removes results that have no resolved link.
+
+`ads` has the ads on the Google or Bing page, in page order. An ad has only the fields that the page shows. `ads` is empty when the page has no ads. The ads cost no extra credits.
 
 | Option | Type | Default | Description |
 | - | - | - | - |
 | `apiKey` | `string` | `CLORO_API_KEY` | Your cloro API key. |
 | `engine` | `"google" \| "bing"` | `"google"` | The search engine to query. |
 | `country` | `string` | `"US"` | ISO 3166-1 alpha-2 country code for the search, for example `"DE"`. For Bing, the country selects the Bing market. |
-| `maxResults` | `number` | `10` | Number of organic results to return, from 1 to 10 (the first results page). |
+| `maxResults` | `number` | `10` | Number of organic results to return, from 1 to 10 (the first results page). It does not limit `ads`. |
 | `includeAiOverview` | `boolean` | `true` | Include the AI Overview. For Bing, this is the Bing AI summary at the top of the results page. Set it to `false` to pay 2 credits less for each search. |
 
 `webSearch({ engine: "bing" })` returns the Bing results with the AI Overview, in the same output shape as Google. To give the model both search engines, make one tool for each:

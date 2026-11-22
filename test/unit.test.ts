@@ -99,6 +99,7 @@ describe("webSearch", () => {
         { position: 4, title: "Boiling points vs altitude", link: "https://www.engineeringtoolbox.com/boiling-points-water-altitude-d_1344.html", snippet: "" },
         { position: 5, title: "Calculator", link: "https://www.omnicalculator.com/chemistry/boiling-point-altitude", snippet: "Calculator." },
       ],
+      ads: [],
     });
   });
 
@@ -128,6 +129,26 @@ describe("webSearch", () => {
     expect(tool.description).toContain("Search Bing");
   });
 
+  it.each(["google", "bing"] as const)("returns the %s ads with the useful fields", async (engine) => {
+    mockFetch({
+      success: true,
+      result: {
+        organicResults: [],
+        ads: [
+          { position: 1, blockPosition: "top", type: "RESULT", title: "Wok Sale", url: "https://shop.example/woks", page: 1, domain: "shop.example", description: "Carbon steel woks." },
+          { position: 1, blockPosition: "rhs", type: "SHOPPING_CARD", title: "14 in Wok", url: GOTO, page: 1, price: { value: 29, currency: "$", raw: "$29.00" }, store: "Shop" },
+          {},
+        ],
+      },
+    });
+    const output = await run(webSearch({ engine, maxResults: 1 }), { query: "wok" });
+    expect(output.ads).toStrictEqual([
+      { position: 1, blockPosition: "top", type: "RESULT", title: "Wok Sale", link: "https://shop.example/woks", description: "Carbon steel woks." },
+      { position: 1, blockPosition: "rhs", type: "SHOPPING_CARD", title: "14 in Wok", price: "$29.00", store: "Shop" },
+      {},
+    ]);
+  });
+
   it("refuses a Bing query over the URL limit before it sends a request", async () => {
     const fn = mockFetch(googleResponse);
     const query = "é".repeat(600); // 6 encoded characters each: 3,600
@@ -142,7 +163,7 @@ describe("webSearch", () => {
   it("returns a null AI Overview when Google shows none", async () => {
     mockFetch({ success: true, result: { organicResults: [] } });
     const output = await run(webSearch(), { query: "x" });
-    expect(output).toEqual({ query: "x", aiOverview: null, results: [] });
+    expect(output).toEqual({ query: "x", aiOverview: null, results: [], ads: [] });
   });
 
   it("uses the apiKey option before CLORO_API_KEY", async () => {
